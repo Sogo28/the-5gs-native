@@ -58,6 +58,15 @@ class FrameSynchronizer(
             if (pendingPoses.size > MAX_PENDING_ITEMS) {
                 Log.w(TAG, "Pending poses map is large, potential memory leak or dropped frames.")
                 // Optional: clear the oldest entry to prevent memory issues
+                // Sort by timestamp (oldest first), and remove the first few
+                val entriesToRemove = pendingPoses.entries
+                    .sortedBy { it.key }
+                    .take(30) // or 1, or more if needed
+
+                for ((ts, _) in entriesToRemove) {
+                    pendingPoses.remove(ts)
+                    Log.d(TAG, "Evicted unmatched pose with timestamp $ts")
+                }
             }
             pendingPoses[timestampNs] = pose
         }
@@ -82,7 +91,7 @@ class FrameSynchronizer(
 
         val finalFrameData = if (isKeyFrame) {
             if (spsData != null && ppsData != null) {
-                Log.d(TAG, "Prepending SPS/PPS to keyframe in Synchronizer.")
+//                Log.d(TAG, "Prepending SPS/PPS to keyframe in Synchronizer.")
                 spsData!! + ppsData!! + encodedData
             } else {
                 Log.w(TAG, "Keyframe arrived but SPS/PPS data is not available in Synchronizer.")

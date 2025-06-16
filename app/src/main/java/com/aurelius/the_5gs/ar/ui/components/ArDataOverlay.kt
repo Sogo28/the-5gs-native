@@ -16,6 +16,7 @@ import com.aurelius.the_5gs.ar.ArFrameData
 fun BoxScope.ArDataOverlay(
     currentArFrameData: ArFrameData?,
     streamStatus : String,
+    translationResult : String
 ) {
     currentArFrameData?.let { data ->
         Column(
@@ -38,7 +39,7 @@ fun BoxScope.ArDataOverlay(
             Spacer(modifier = Modifier.height(4.dp))
             Text("Stream Status: $streamStatus", color = Color.Magenta, fontSize = 10.sp)
             Spacer(modifier = Modifier.height(4.dp))
-
         }
+        Text("Translation Result : ${translationResult.substringBefore(" (")}", color = Color.White, fontSize = 20.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp))
     }
 }

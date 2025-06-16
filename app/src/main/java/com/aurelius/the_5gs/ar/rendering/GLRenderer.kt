@@ -249,7 +249,7 @@ class GLRenderer(
 
         // Set presentation time
         val currentTimestamp = timestampNs
-        Log.e("VideoEncoder", "Current Frame Timestamp : $timestampNs.")
+//        Log.e("GLRenderer", "Current Frame Timestamp : $timestampNs.")
         EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, currentTimestamp)
 
         if (!EGL14.eglSwapBuffers(eglDisplay, eglSurface)) {

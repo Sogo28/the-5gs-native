@@ -410,7 +410,7 @@ class VideoEncoder(
                                 val originalNs = submittedArCoreTimestampNsQueue.poll() // Récupérer le TS original
 
                                 if (originalNs != null) {
-                                    Log.d(TAG, "Appel de onEncodedFrame pour données vidéo réelles. Taille: ${data.size}, Clé: $isKeyFrame, PTS_enc: ${bufferInfo.presentationTimeUs}, PTS_orig_ns: $originalNs")
+//                                    Log.d(TAG, "Appel de onEncodedFrame pour données vidéo réelles. Taille: ${data.size}, Clé: $isKeyFrame, PTS_enc: ${bufferInfo.presentationTimeUs}, PTS_orig_ns: $originalNs")
                                     onEncodedFrame(byteString, isKeyFrame, originalNs)
                                 } else if (isRunning) { // Seulement un avertissement si on s'attendait à des trames
                                     Log.w(TAG, "Trame encodée (PTS_us ${bufferInfo.presentationTimeUs}) mais pas de timestamp ARCore original correspondant dans la file. Ignorée.")

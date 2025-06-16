@@ -1,8 +1,10 @@
 package com.aurelius.the_5gs
 
 import android.Manifest
+import android.media.Image
 import android.opengl.EGLContext
 import android.opengl.GLSurfaceView
+import android.opengl.Matrix
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -31,15 +33,23 @@ import com.aurelius.the_5gs.ar.ui.lifecycle.ManageArSessionLifecycle
 import com.aurelius.the_5gs.ar.ui.screens.ArScreen
 import com.aurelius.the_5gs.ar.ui.screens.HomeScreen
 import com.aurelius.the_5gs.common.Config
+import com.google.ar.core.Config as ArCoreConfig
 import com.aurelius.the_5gs.helpers.CameraPermissionHelper
 import com.aurelius.the_5gs.media.VideoEncoderManager
 import com.aurelius.the_5gs.network.GrpcStreamManager
 import com.aurelius.the_5gs.network.QuicNetworkManager
 import com.aurelius.the_5gs.network.builder.ArPacketFactory
+import com.aurelius.the_5gs.proto.Landmark
+import com.aurelius.the_5gs.proto.ServerToClientMessage
 import com.aurelius.the_5gs.ui.theme.The5gsTheme
 import com.google.ar.core.Camera
 import com.google.ar.core.Frame
+import java.nio.ByteOrder
 import com.google.ar.core.TrackingState
+import com.google.ar.core.exceptions.NotYetAvailableException
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.sqrt
 
 class MainActivity : ComponentActivity(), ArFrameListener {
 
@@ -55,6 +65,10 @@ class MainActivity : ComponentActivity(), ArFrameListener {
     private var arFrameAnalyzer: ArFrameAnalyzer = ArFrameAnalyzer()
     private lateinit var appRendererInstance: AppRenderer
     private var glSurfaceView: GLSurfaceView? = null
+    private var lastRecognizedGesture by mutableStateOf("")
+    private var handLandmarks by mutableStateOf<List<Landmark>>(emptyList())
+
+
     // Ar variables
     private var sharedEglContextForEncoder: EGLContext? = null
     private var currentArFrameData by mutableStateOf<ArFrameData?>(null)
@@ -120,6 +134,8 @@ class MainActivity : ComponentActivity(), ArFrameListener {
                                     onStopArSessionCallback = {
                                         stopArSession()
                                     },
+                                    handLandmarks = handLandmarks,
+                                    translationResult = lastRecognizedGesture
                                 )
                             }
                         }
@@ -162,10 +178,8 @@ class MainActivity : ComponentActivity(), ArFrameListener {
     }
     override fun onNewArFrameAvailable(frame: Frame, camera: Camera) {
         if(!isArActive) return
-
         val trackingState = camera.trackingState
         if(trackingState != TrackingState.TRACKING) return
-
         val arFrameData = arFrameAnalyzer.extractArFrameData(frame, camera) ?: return
         currentArFrameData = arFrameData
         handleArFrame(arFrameData)
@@ -183,12 +197,31 @@ class MainActivity : ComponentActivity(), ArFrameListener {
         QuicNetworkManager.initialize(this)
         displayRotationHelper = DisplayRotationHelper(this)
         arCoreSessionHelper = ARCoreSessionLifecycleHelper(this)
+        arCoreSessionHelper.beforeSessionResume = {
+            session ->
+            Log.d(TAG, "beforeSessionResume : Configuration de la session ARCore...")
+            val config = session.config
+
+            if(session.isDepthModeSupported((ArCoreConfig.DepthMode.AUTOMATIC))){
+                config.depthMode = ArCoreConfig.DepthMode.AUTOMATIC
+                Log.i(TAG, "DepthMode configuré sur AUTOMATIC")
+            }
+            else{
+                config.depthMode = ArCoreConfig.DepthMode.DISABLED
+                Log.w(TAG, "Le mode de profondeur AUTOMATIC n'est pas supporté. Il est désactivé.")
+            }
+
+            session.configure(config)
+        }
         isPermissionGranted = CameraPermissionHelper.hasCameraPermission(this)
 
         streamManager = GrpcStreamManager(
             serverHost = Config.GRPC_SERVER_HOST,
             serverPort = Config.GRPC_SERVER_PORT,
-            onServerResponse = {},
+            onServerResponse = {
+                response ->
+                onServerResponseReceived(response)
+            },
             onStreamError = {},
             onStreamCompleted = {}
         )
@@ -231,6 +264,26 @@ class MainActivity : ComponentActivity(), ArFrameListener {
             height = surfaceHeight
         )
     }
+    private fun onServerResponseReceived(response: ServerToClientMessage) {
+        // --- PARTIE 1 : Gérer la réception du nom du geste ---
+        runOnUiThread{
+            if (response.hasTranslationResult()) {
+                val newGesture = response.translationResult
+                // Mettre à jour notre variable d'état avec le nouveau geste
+                lastRecognizedGesture = newGesture
+            }
+
+            if (response.hasHandLandmarksResult()) {
+                // Le thread réseau fait une seule chose : ajouter les landmarks à la queue.
+                // C'est une opération très rapide et non-bloquante.
+                handLandmarks = response.handLandmarksResult.landmarksList
+                // Si la liste de landmarks est vide, on peut aussi effacer le texte du geste
+                if (response.handLandmarksResult.landmarksList.isEmpty()) {
+                    lastRecognizedGesture = ""
+                }
+            }
+        }
+    }
     private fun stopArSession(){
         Log.w("MainActivityAR", "Stop Ar button clicked. Changing isArctive to false.")
         isArActive = false // This triggers onDispose in ManageArSessionAndGrpcStreamLifecycle
@@ -245,6 +298,7 @@ class MainActivity : ComponentActivity(), ArFrameListener {
         arCoreSessionHelper.session?.pause()
         displayRotationHelper.onPause()
         arCoreSessionHelper.detachFrom(lifecycle)
+        handLandmarks = emptyList()
     }
     private fun initVideoEncoderOnce() {
 
@@ -286,5 +340,5 @@ class MainActivity : ComponentActivity(), ArFrameListener {
             return
         }
     }
-    
+
 }

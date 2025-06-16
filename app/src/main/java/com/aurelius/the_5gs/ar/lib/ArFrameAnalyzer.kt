@@ -29,11 +29,11 @@ class ArFrameAnalyzer {
     }
 
     fun extractArFrameData(frame: Frame, camera: Camera): ArFrameData? {
-        Log.i(TAG, "Extracting data from the frame...")
+//        Log.i(TAG, "Extracting data from the frame...")
         val trackingState = camera.trackingState
 
         if(trackingState != TrackingState.TRACKING) {
-            Log.w(TAG, "Camera not tracking yet !")
+//            Log.w(TAG, "Camera not tracking yet !")
             return null
         }
 

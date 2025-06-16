@@ -84,7 +84,7 @@ class VideoEncoderManager(
 
         // Enforce increasing timestamps (MediaCodec requires this!)
         if (timestampNs <= lastQueuedVideoFrameToEncoderTimestamp) {
-            Log.w("VideoEncoderManager", "Dropping frame due to non-increasing timestamp: $timestampNs <= $lastQueuedVideoFrameToEncoderTimestamp")
+//            Log.w("VideoEncoderManager", "Dropping frame due to non-increasing timestamp: $timestampNs <= $lastQueuedVideoFrameToEncoderTimestamp")
             return
         }
 

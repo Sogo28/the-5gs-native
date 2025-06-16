@@ -14,6 +14,8 @@ import com.aurelius.the_5gs.ar.ArFrameData
 import com.aurelius.the_5gs.ar.rendering.AppRenderer
 import com.aurelius.the_5gs.ar.ui.components.ArDataOverlay
 import com.aurelius.the_5gs.ar.ui.components.ArView
+import com.aurelius.the_5gs.ar.ui.components.HandSkeletonOverlay
+import com.aurelius.the_5gs.proto.Landmark
 import com.aurelius.the_5gs.ui.components.MyButton
 
 @Composable
@@ -22,7 +24,9 @@ fun ArScreen(
     onStopArSessionCallback: () -> Unit,
     currentArFrameData: ArFrameData?,
     appRenderer: AppRenderer,
-    streamStatus : String
+    streamStatus : String,
+    translationResult: String,
+    handLandmarks: List<Landmark>
 ) {
     Box(Modifier.fillMaxSize()) {
         ArView(
@@ -32,9 +36,15 @@ fun ArScreen(
             appRenderer = appRenderer,
         )
 
+        HandSkeletonOverlay(
+            landmarks = handLandmarks,
+            modifier = Modifier.fillMaxSize()
+        )
+
         ArDataOverlay(
             currentArFrameData = currentArFrameData,
-            streamStatus = streamStatus
+            streamStatus = streamStatus,
+            translationResult = translationResult
         )
 
         MyButton(

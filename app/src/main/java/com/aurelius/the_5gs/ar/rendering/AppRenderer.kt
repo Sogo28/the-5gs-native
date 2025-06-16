@@ -124,8 +124,6 @@ class AppRenderer(
             if (camera.trackingState == TrackingState.PAUSED) {
                 return
             }
-            // ... (other rendering for display) ...
-
         } catch (e: CameraNotAvailableException) {
             Log.e(TAG, "CameraNotAvailableException in onDrawFrame", e)
 //            onFrameUpdate(ArFrameData(System.nanoTime(), null, ArPoseData(), null, null, TrackingState.PAUSED, null, null, null, null))
@@ -134,6 +132,5 @@ class AppRenderer(
 //            onFrameUpdate(ArFrameData(System.nanoTime(), null, ArPoseData(), null, null, TrackingState.PAUSED, null, null, null, null))
         }
     }
-
 
 }
